@@ -84,7 +84,7 @@ After injection, it polls `GET /{infoHash}/{fileIdx}/stats.json` and displays:
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/StremioBad.git
+git clone https://github.com/fzrael/StremioBad.git
 cd StremioBad
 
 # Install dependencies
@@ -155,3 +155,4 @@ Stremio's addon system has additional security concerns:
 ## 📜 License
 
 MIT — Use responsibly.
+
