@@ -1,0 +1,10 @@
+{
+    "name": "stremio-cors-scanner",
+    "version": "1.0.0",
+    "description": "CORS vulnerability scanner for Stremio local server",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node index.js"
+    }
+}

